@@ -6,7 +6,7 @@ class geneticAlgorithm:
         self.periodos = periodos
         self.populationSize = 10
         self.mutationRate = 40 #Taxa de mutação (40% dos filhos terao a mutacao aplicada)
-        self.generations = 20
+        self.generations = 5
         self.population = []
 
         #Variaveis para armazenar a melhor solucao
@@ -25,40 +25,45 @@ class geneticAlgorithm:
             for i in range(self.populationSize//2):
                 t1 = self.torneio()
                 t2 = self.torneio()
-
                 while t1 == t2:
                     t2 = self.torneio()
-        #         # a, b = crossover(self.population[t1], self.population[t2])
+
+                a, b = self.crossover(self.population[t1], self.population[t2])
         #         # a = mutation(a)
         #         # b = mutation(b)
-        #         # F.append(a)
-        #         # F.append(b)
+                F.append(a)
+                F.append(b)
 
-        #     self.population = F
-        #     print("População da geração: ", g+1)
-        #     # imprime_populacao()
+            self.population = F
+            # print("População da geração: ", g+1)
+            # self.imprimePopulacao()
 
-        # print("Melhor solucao: ", self.best, self.bestFitness)
+        print("Melhor solucao: ", self.best, self.bestFitness)
     
     def generatesInitialPopulation(self):
         for i in range(self.populationSize):
             individuo = []
             for a in range (len(self.dadosOriginais)):
-                atividade = []
-                for p in range(len(self.periodos)):
-                    atividade.append(np.random.randint(0, 2))
-                individuo.append(atividade)
+                ch = self.dadosOriginais[a][3] #carga horaria
+                alocacao = self.distribuirCH((len(self.periodos)), ch)
+                individuo.append(alocacao.tolist())
             self.population.append(individuo)
+        
+    def distribuirCH(self, tamanho_array, quantidade_1s): 
+        array = np.zeros(tamanho_array, dtype=int) 
+        indices_aleatorios = np.random.choice(tamanho_array, quantidade_1s, replace=False) 
+        array[indices_aleatorios] = 1 
+        return array
 
     def imprimePopulacao(self):
         for i in range(self.populationSize):
-            # f = fitness(P[i])
+            f = self.fitness(i)
             print(i, self.population[i])
 
             #Armazenando a melhor solução encontrada
-            # if f > Best_fitness:
-            # Best_fitness = f
-            # Best = P[i]
+            if f < self.bestFitness:
+                self.bestFitness = f
+                self.best = self.population[i]
 
     def torneio(self):
         random1 = np.random.randint(0, self.populationSize-1)
@@ -68,6 +73,8 @@ class geneticAlgorithm:
 
         f1 = self.fitness(random1)
         f2 = self.fitness(random2)
+        print("f1", f1)
+        print("f2", f2)
         #Menos conflitos
         if f1 < f2:
             return random1
@@ -77,23 +84,60 @@ class geneticAlgorithm:
             return np.random.choice([random1, random2])
         
     def fitness(self, individuoIndex):
-        chTotal = self.dadosOriginais[individuoIndex, 3]
         conflitos = 0
-
-        #Comparar ch
-
-        #Verificação por período
-            #mesma turma nos mesmos períodos
-            #mesmo professor nos mesmos períodos
-            #mesmo recurso nos mesmos períodos
+        turmas_periodo = {}
+        professores_periodo = {}
+        recursos_periodo = {}
         
-        #Verificar se é pra geminar e se está geminada 
+        #revisar essas
+        # Inicializar turma, professor e recurso para cada iteração
+        for atividadeIndex, atividade in enumerate(self.dadosOriginais):
+            turma = None
+            professor = None
+            recurso = None
+            
+            if self.population[individuoIndex][atividadeIndex] == 1:
+                turma = atividade[1][0]
+                professor = atividade[2][0]
+                recurso = atividade[5][0] if atividade[5] else None
 
+            # Verificar conflitos de turma
+            if turma is not None:
+                turmas_periodo[turma] = atividadeIndex
+                if turma in turmas_periodo:
+                    conflitos += 1
+
+            # # Verificar conflitos de professor
+            if professor is not None:
+                if professor in professores_periodo:
+                    conflitos += 1
+                professores_periodo[professor] = atividadeIndex
+
+            # # Verificar conflitos de recurso
+            if recurso is not None:
+                if recurso in recursos_periodo:
+                    conflitos += 1
+                recursos_periodo[recurso] = atividadeIndex
+
+            #Verificar se é pra geminar e se está geminada 
         return conflitos
 
-    #mutation
-
     #crossover
+    def crossover(self, x, y):
+        a = []
+        b = []
+        meio = len(x)//2 #o recomendado não é o corte ser no meio e sim em posição aleatória
+        for i in range(len(x)):
+            if i < meio:
+                a.append(x[i])
+                b.append(y[i])
+            else:
+                a.append(y[i])
+                b.append(x[i])
+
+        return a, b
+
+    #mutation
 
 
 #Dados para testar
