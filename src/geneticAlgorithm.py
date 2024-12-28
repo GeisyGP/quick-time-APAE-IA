@@ -4,8 +4,8 @@ class geneticAlgorithm:
     def __init__(self, dadosOriginais, periodos):
         self.dadosOriginais = dadosOriginais
         self.periodos = periodos
-        self.populationSize = 40
-        self.mutationRate = 40 #Taxa de mutação (40% dos filhos terao a mutacao aplicada)
+        self.populationSize = 500
+        self.mutationRate = 50 #Taxa de mutação (40% dos filhos terao a mutacao aplicada)
         self.generations = 400
         self.population = []
 
@@ -29,8 +29,8 @@ class geneticAlgorithm:
                     t2 = self.torneio()
 
                 a, b = self.crossover(self.population[t1], self.population[t2])
-        #         # a = mutation(a)
-        #         # b = mutation(b)
+                a = self.mutation(a)
+                b = self.mutation(b)
                 F.append(a)
                 F.append(b)
 
@@ -59,7 +59,7 @@ class geneticAlgorithm:
         else:
             indices_aleatorios = np.random.choice(tamanho_array, quantidade_1s, replace=False)
             array[indices_aleatorios] = 1
-        
+
         return array
 
     def imprimePopulacao(self):
@@ -145,7 +145,6 @@ class geneticAlgorithm:
 
         return atividades
 
-    #crossover
     def crossover(self, x, y):
         ponto_corte = np.random.randint(1, len(x))
         filhoA = []
@@ -161,6 +160,20 @@ class geneticAlgorithm:
         return filhoA, filhoB
 
     #mutation
+    def mutation(self, x):
+        r = np.random.randint(1, 100)
+        if r <= self.mutationRate:
+            atividadeIndex = np.random.randint(0, len(x)-1) #Sortear a atividade da mudança no vetor do individuo
+            
+            ch = self.dadosOriginais[atividadeIndex][3] #carga horaria
+            isConjugated = self.dadosOriginais[atividadeIndex][4]
+            newAlocacao = self.distribuirCH((len(self.periodos)), ch, isConjugated)
+
+            x[atividadeIndex] = newAlocacao.tolist()
+            
+        return x
+
+        
 
 
 #Dados para testar
