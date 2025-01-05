@@ -5,8 +5,8 @@ class geneticAlgorithm:
         self.dadosOriginais = dadosOriginais
         self.periodos = periodos
         self.populationSize = 500
-        self.mutationRate = 50 #Taxa de mutação (40% dos filhos terao a mutacao aplicada)
-        self.generations = 400
+        self.mutationRate = 40 #Taxa de mutação (40% dos filhos terao a mutacao aplicada)
+        self.generations = 2500
         self.population = []
 
         #Variaveis para armazenar a melhor solucao
@@ -37,6 +37,8 @@ class geneticAlgorithm:
             self.population = F
             print("População da geração: ", g+1)
             self.imprimePopulacao()
+            if self.bestFitness == 0:
+                break
 
         print("Melhor solucao: ", self.best, self.bestFitness)
     
@@ -46,26 +48,52 @@ class geneticAlgorithm:
             for a in range (len(self.dadosOriginais)):
                 ch = self.dadosOriginais[a][3] #carga horaria
                 isConjugated = self.dadosOriginais[a][4]
-                alocacao = self.distribuirCH((len(self.periodos)), ch, isConjugated)
+                periodos_indisponiveis = self.dadosOriginais[a][6]
+                alocacao = self.distribuirCH((len(self.periodos)), ch, isConjugated, periodos_indisponiveis)
                 individuo.append(alocacao.tolist())
             self.population.append(individuo)
          
-    def distribuirCH(self, tamanho_array, quantidade_1s, isConjugated):
+    def distribuirCH(self, tamanho_array, quantidade_1s, isConjugated, periodos_indisponiveis):
         array = np.zeros(tamanho_array, dtype=int)
         
-        if isConjugated:
-            ponto_inicio = np.random.choice(tamanho_array - quantidade_1s + 1)
-            array[ponto_inicio:ponto_inicio + quantidade_1s] = 1
-        else:
-            indices_aleatorios = np.random.choice(tamanho_array, quantidade_1s, replace=False)
-            array[indices_aleatorios] = 1
+        if quantidade_1s > tamanho_array:
+            print(f"Erro: carga horária {quantidade_1s} maior que disponibilidade {tamanho_array}")
+            return array
 
+        id_to_index = {id: idx for idx, id in enumerate(self.periodos)}
+        indisponiveis_indices = [id_to_index[id] for id in periodos_indisponiveis if id in id_to_index]
+
+        for periodo in indisponiveis_indices:
+            array[periodo] = -1
+
+        if isConjugated:
+            max_attempts = 100  # Máximo de tentativas para encontrar um ponto válido
+            attempts = 0
+            while attempts < max_attempts:
+                ponto_inicio = np.random.randint(0, tamanho_array - quantidade_1s + 1)
+                subsequencia = array[ponto_inicio:ponto_inicio + quantidade_1s]
+                if -1 not in subsequencia:
+                    array[ponto_inicio:ponto_inicio + quantidade_1s] = 1
+                    break
+                attempts += 1
+            if attempts == max_attempts:
+                print("Erro: Não foi possível encontrar um ponto válido para alocação geminada considerando os períodos indisponíveis")
+
+        else:
+            periodos_disponiveis = [i for i in range(tamanho_array) if array[i] == 0]
+            if len(periodos_disponiveis) >= quantidade_1s:
+                indices_aleatorios = np.random.choice(periodos_disponiveis, quantidade_1s, replace=False)
+                array[indices_aleatorios] = 1
+            else:
+                print("Erro: Não há períodos disponíveis suficientes para a alocação")
+        
+        array[array == -1] = 0
         return array
 
     def imprimePopulacao(self):
         for i in range(self.populationSize):
             f = self.fitness(i)
-            print(i, self.population[i], f)
+            print(i, f)
 
             #Armazenando a melhor solução encontrada
             if f < self.bestFitness:
@@ -129,7 +157,6 @@ class geneticAlgorithm:
                             else:
                                 periodos_ocupados[periodo_index] = originalIndex
                         
-        #Validar restrições 
         return conflitos
 
     def agruparAtividades(self, indexEntidade):
@@ -167,45 +194,50 @@ class geneticAlgorithm:
             
             ch = self.dadosOriginais[atividadeIndex][3] #carga horaria
             isConjugated = self.dadosOriginais[atividadeIndex][4]
-            newAlocacao = self.distribuirCH((len(self.periodos)), ch, isConjugated)
+            periodos_indisponiveis = self.dadosOriginais[atividadeIndex][6]
+            newAlocacao = self.distribuirCH((len(self.periodos)), ch, isConjugated, periodos_indisponiveis)
 
             x[atividadeIndex] = newAlocacao.tolist()
             
         return x
 
-        
-
 
 #Dados para testar
-# 0ATIVIDADE, 1TURMA, 2PROFESSOR, 3CH, 4GEMINAR?, 5RECURSO
+# 0ATIVIDADE, 1TURMA, 2PROFESSOR, 3CH, 4GEMINAR?, 5RECURSO, 6ids de periodos indisponiveis
 dados = [
-    [1, [1], [1], 16, False, [1]],
-    [2, [1], [1], 2, True, []],
-    [3, [1], [1], 2, True, []],
-    [4, [2], [2], 14, False, []],
-    [5, [2], [3], 1, False, [1]],
-    [7, [2], [4], 1, False, []],
-    [8, [2], [2], 1, False, []],
-    [9, [2, 3], [5], 1, False, []],
-    [10, [2, 3], [4, 3], 2, True, []],
-    [11, [3], [6], 14, False, []],
-    [12, [3], [3], 1, False, []],
-    [13, [3], [4], 1, False, []],
-    [14, [3], [6], 1, False, []],
-    [15, [4], [7], 15, False, []],
-    [16, [4], [3], 1, False, []],
-    [18, [4], [4], 2, False, []],
-    [19, [4], [5], 1, False, []],
-    [20, [4], [7], 1, False, []],
-    [21, [5], [8], 19, False, []],
-    [22, [5], [8], 1, False, []],
-    [23, [6], [9], 16, False, []],
-    [24, [6], [9], 1, False, []],
-    [25, [6], [3], 1, False, []],
-    [26, [6], [4], 1, False, []],
-    [27, [6], [9], 1, False, []],
+    [1, [1], [1], 16, False, [1], [16, 20]],
+    [2, [1], [1], 2, True, [], []],
+    [3, [1], [1], 2, True, [], []],
+    [4, [2], [2], 14, False, [], []],
+    [5, [2], [3], 1, False, [1], [4, 8, 12, 16, 20]],
+    [7, [2], [4], 1, False, [], []],
+    [8, [2], [2], 1, False, [], []],
+    [9, [2, 3], [5], 1, False, [], []],
+    [10, [2, 3], [4, 3], 2, True, [], []],
+    [11, [3], [6], 14, False, [], []],
+    [12, [3], [3], 1, False, [], []],
+    [13, [3], [4], 1, False, [], []],
+    [14, [3], [6], 1, False, [], []],
+    [15, [4], [7], 15, False, [], []],
+    [16, [4], [3], 1, False, [], []],
+    [18, [4], [4], 2, False, [], []],
+    [19, [4], [5], 1, False, [], []],
+    [20, [4], [7], 1, False, [], []],
+    [21, [5], [8], 19, False, [], []],
+    [22, [5], [8], 1, False, [], []],
+    [23, [6], [9], 16, False, [], []],
+    [24, [6], [9], 1, False, [], []],
+    [25, [6], [3], 1, False, [], []],
+    [26, [6], [4], 1, False, [], []],
+    [27, [6], [9], 1, False, [], [1]],
 ]
 
 periodos = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20]
 teste = geneticAlgorithm(dados, periodos)
 teste.main()
+
+#id da atividade, ids dos periodos com restrições
+restrictions = [
+    [1, [4, 8, 12, 16, 20]],
+    [3, [4, 8, 12, 16, 20]]
+]
