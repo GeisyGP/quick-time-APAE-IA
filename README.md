@@ -26,9 +26,6 @@ Na função fitness é contado a quantidade de conflitos que há no indivíduo d
 - Conflito de professor: um mesmo professor com mais de uma atividade no mesmo período
 - Conflito de recurso: um mesmo recurso com mais de uma atividade no mesmo período
 
-Ainda não implementadas:
-- Conflito de restrição: turma ou professor não disponível no período (talvez implementar já na geração da população inicial)
-
 ### Crossover 
 Inicialmente implementado dividindo as ativadades dos pais, da seguinte forma:
 - Escolhe um ponto de corte aleatório

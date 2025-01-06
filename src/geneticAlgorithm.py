@@ -1,113 +1,138 @@
 import numpy as np
+import time
 
 class geneticAlgorithm:
-    def __init__(self, dadosOriginais, periodos):
-        self.dadosOriginais = dadosOriginais
-        self.periodos = periodos
-        self.populationSize = 500
-        self.mutationRate = 40 #Taxa de mutação (40% dos filhos terao a mutacao aplicada)
-        self.generations = 2500
+    def __init__(self, originalData, periods):
+        self.originalData = originalData
+        self.periods = periods
+        self.populationSize = 80
+        self.mutationRate = 40
+        self.generations = 3000
         self.population = []
 
-        #Variaveis para armazenar a melhor solucao
+        self.activitiesByClass = self._groupActivities(1)
+        self.activitiesByTeacher = self._groupActivities(2)
+        self.activitiesByResource = self._groupActivities(5)
+
         self.best = []
         self.bestFitness = 10000
 
-    def main(self):
-        self.generatesInitialPopulation()
-        print("População inicial: " )
-        self.imprimePopulacao()
+    def run(self):
+        start_time = time.time()
+        self._generatesInitialPopulation()
+        self._printsPopulation()
 
         for g in range(self.generations):
-            F = [] #Armazenar a nova geração
+            F = []
 
-            # Seleção
-            for i in range(self.populationSize//2):
-                t1 = self.torneio()
-                t2 = self.torneio()
+            # Selection
+            for i in range((self.populationSize)//2):
+                t1 = self._tournament()
+                t2 = self._tournament()
                 while t1 == t2:
-                    t2 = self.torneio()
+                    t2 = self._tournament()
+                a, b = self._crossover(self.population[t1], self.population[t2])
+               
+                a = self._mutation(a)
+                b = self._mutation(b)   
 
-                a, b = self.crossover(self.population[t1], self.population[t2])
-                a = self.mutation(a)
-                b = self.mutation(b)
                 F.append(a)
                 F.append(b)
 
             self.population = F
-            print("População da geração: ", g+1)
-            self.imprimePopulacao()
+
+            print("Generation: ", g+1)
+            self._printsPopulation()
+
             if self.bestFitness == 0:
                 break
-
-        print("Melhor solucao: ", self.best, self.bestFitness)
-    
-    def generatesInitialPopulation(self):
-        for i in range(self.populationSize):
-            individuo = []
-            for a in range (len(self.dadosOriginais)):
-                ch = self.dadosOriginais[a][3] #carga horaria
-                isConjugated = self.dadosOriginais[a][4]
-                periodos_indisponiveis = self.dadosOriginais[a][6]
-                alocacao = self.distribuirCH((len(self.periodos)), ch, isConjugated, periodos_indisponiveis)
-                individuo.append(alocacao.tolist())
-            self.population.append(individuo)
-         
-    def distribuirCH(self, tamanho_array, quantidade_1s, isConjugated, periodos_indisponiveis):
-        array = np.zeros(tamanho_array, dtype=int)
         
-        if quantidade_1s > tamanho_array:
-            print(f"Erro: carga horária {quantidade_1s} maior que disponibilidade {tamanho_array}")
+        end_time = time.time()
+        execution_time = end_time - start_time
+
+        print("Best solution: ", self.best, self.bestFitness)
+        print(f"Execution time: {execution_time:.2f} seconds")
+        return self.best, self.bestFitness
+    
+    def _groupActivities(self, entityIndex):
+        activities = {}
+
+        for i, activity in enumerate(self.originalData):
+            entities = activity[entityIndex]
+            
+            for e in entities:
+                if e not in activities:
+                    activities[e] = []
+                activities[e].append((i, activity))
+
+        return activities
+
+    def _generatesInitialPopulation(self):
+        for i in range(self.populationSize):
+            chromosome = []
+            for a in range (len(self.originalData)):
+                workload = self.originalData[a][3]
+                isConjugated = self.originalData[a][4]
+                unavailablePeriods = self.originalData[a][6]
+                allocation = self._distributeWorkload(workload, isConjugated, unavailablePeriods)
+                chromosome.append(allocation.tolist())
+            self.population.append(chromosome)
+         
+    def _distributeWorkload(self, workload, isConjugated, unavailablePeriods):
+        arraySize = len(self.periods)
+        array = np.zeros((arraySize), dtype=int)
+        
+        if workload > (arraySize):
+            print(f"Error: workload {workload} greater than number of periods {(arraySize)}")
             return array
 
-        id_to_index = {id: idx for idx, id in enumerate(self.periodos)}
-        indisponiveis_indices = [id_to_index[id] for id in periodos_indisponiveis if id in id_to_index]
+        idToIndex = {id: idx for idx, id in enumerate(self.periods)}
+        unavailableIndexes = [idToIndex[id] for id in unavailablePeriods if id in idToIndex]
 
-        for periodo in indisponiveis_indices:
+        for periodo in unavailableIndexes:
             array[periodo] = -1
 
         if isConjugated:
-            max_attempts = 100  # Máximo de tentativas para encontrar um ponto válido
-            attempts = 0
-            while attempts < max_attempts:
-                ponto_inicio = np.random.randint(0, tamanho_array - quantidade_1s + 1)
-                subsequencia = array[ponto_inicio:ponto_inicio + quantidade_1s]
-                if -1 not in subsequencia:
-                    array[ponto_inicio:ponto_inicio + quantidade_1s] = 1
+            max_attempts = 100
+            attempt = 0
+            while attempt < max_attempts:
+                startIndex = np.random.randint(0, arraySize - workload + 1)
+                segment = array[startIndex:startIndex + workload]
+                if -1 not in segment:
+                    array[startIndex:startIndex + workload] = 1
                     break
-                attempts += 1
-            if attempts == max_attempts:
-                print("Erro: Não foi possível encontrar um ponto válido para alocação geminada considerando os períodos indisponíveis")
+                attempt += 1
+            if attempt == max_attempts:
+                print("Error: It was not possible to find a valid point for the conjugate allocation")
 
         else:
-            periodos_disponiveis = [i for i in range(tamanho_array) if array[i] == 0]
-            if len(periodos_disponiveis) >= quantidade_1s:
-                indices_aleatorios = np.random.choice(periodos_disponiveis, quantidade_1s, replace=False)
-                array[indices_aleatorios] = 1
+            availablePeriods = [i for i in range(arraySize) if array[i] == 0]
+            if len(availablePeriods) >= workload:
+                randomIndexes = np.random.choice(availablePeriods, workload, replace=False)
+                array[randomIndexes] = 1
             else:
-                print("Erro: Não há períodos disponíveis suficientes para a alocação")
+                print("Erro: Not enough periods available for allocation")
         
         array[array == -1] = 0
         return array
 
-    def imprimePopulacao(self):
+    def _printsPopulation(self):
         for i in range(self.populationSize):
-            f = self.fitness(i)
+            f = self._fitness(self.population[i])
             print(i, f)
 
-            #Armazenando a melhor solução encontrada
             if f < self.bestFitness:
                 self.bestFitness = f
                 self.best = self.population[i]
 
-    def torneio(self):
+    def _tournament(self):
         random1 = np.random.randint(0, self.populationSize-1)
         random2 = np.random.randint(0, self.populationSize-1)
         while random1 == random2:
             random2 = np.random.randint(0, self.populationSize-1)
 
-        f1 = self.fitness(random1)
-        f2 = self.fitness(random2)
+        f1 = self._fitness(self.population[random1])
+        f2 = self._fitness(self.population[random2])
         if f1 < f2:
             return random1
         elif f2 < f1:
@@ -115,92 +140,50 @@ class geneticAlgorithm:
         else:
             return np.random.choice([random1, random2])
         
-    def fitness(self, individuoIndex):
-        conflitos = 0
+    def _fitness(self, chromosome):
+        conflicts = 0
 
-        atividadesPorTurma = self.agruparAtividades(1)
-        for turma, atividades in atividadesPorTurma.items():
-            periodos_ocupados = {}
-
-            if (len(atividades) > 0):
-                for originalIndex, atividade in atividades:
-                    for periodo_index, periodo in enumerate(self.population[individuoIndex][originalIndex]):
-                        if periodo == 1:
-                            if periodo_index in periodos_ocupados:
-                                conflitos += 1
-                            else:
-                                periodos_ocupados[periodo_index] = originalIndex
-
-        atividadesPorProfessor = self.agruparAtividades(2)
-        for professor, atividades in atividadesPorProfessor.items():
-            periodos_ocupados = {}
-
-            if (len(atividades) > 0):
-                for originalIndex, atividade in atividades:
-                    for periodo_index, periodo in enumerate(self.population[individuoIndex][originalIndex]):
-                        if periodo == 1:
-                            if periodo_index in periodos_ocupados:
-                                conflitos += 1
-                            else:
-                                periodos_ocupados[periodo_index] = originalIndex
-
-        atividadesPorRecurso = self.agruparAtividades(5)
-        for recurso, atividades in atividadesPorRecurso.items():
-            periodos_ocupados = {}
-
-            if (len(atividades) > 0):
-                for originalIndex, atividade in atividades:
-                    for periodo_index, periodo in enumerate(self.population[individuoIndex][originalIndex]):
-                        if periodo == 1:
-                            if periodo_index in periodos_ocupados:
-                                conflitos += 1
-                            else:
-                                periodos_ocupados[periodo_index] = originalIndex
+        conflicts += self._calculateConflictsByEntity(self.activitiesByClass, chromosome)
+        conflicts += self._calculateConflictsByEntity(self.activitiesByTeacher, chromosome)
+        conflicts += self._calculateConflictsByEntity(self.activitiesByResource, chromosome)
                         
-        return conflitos
+        return conflicts
 
-    def agruparAtividades(self, indexEntidade):
-        atividades = {}
+    def _calculateConflictsByEntity(self, activitiesByEntity, chromosome):
+        conflicts = 0
+        for entity, activities in activitiesByEntity.items():
+            busyPeriods = {}
 
-        for i, atividade in enumerate(self.dadosOriginais):
-            entidades = atividade[indexEntidade]
-            
-            for e in entidades:
-                if e not in atividades:
-                    atividades[e] = []
-                atividades[e].append((i, atividade))
+            if (len(activities) > 0):
+                for originalIndex, activity in activities:
+                    for periodIndex, period in enumerate(chromosome[originalIndex]):
+                        if period == 1:
+                            if periodIndex in busyPeriods:
+                                conflicts += 1
+                            else:
+                                busyPeriods[periodIndex] = originalIndex
+        return conflicts
 
-        return atividades
+    def _crossover(self, x, y):
+        cutoffPoint = np.random.randint(1, len(x))
 
-    def crossover(self, x, y):
-        ponto_corte = np.random.randint(1, len(x))
-        filhoA = []
-        filhoB = []
-        for i in range(len(x)):
-            if i < ponto_corte:
-                filhoA.append(x[i])
-                filhoB.append(y[i])
-            else:
-                filhoA.append(y[i])
-                filhoB.append(x[i])
+        childA = x[:cutoffPoint] + y[cutoffPoint:]
+        childB = y[:cutoffPoint] + x[cutoffPoint:]
 
-        return filhoA, filhoB
+        return childA, childB
 
-    #mutation
-    def mutation(self, x):
+    def _mutation(self, x):
         r = np.random.randint(1, 100)
         if r <= self.mutationRate:
-            atividadeIndex = np.random.randint(0, len(x)-1) #Sortear a atividade da mudança no vetor do individuo
+            randomIndex = np.random.randint(0, len(x)-1)
             
-            ch = self.dadosOriginais[atividadeIndex][3] #carga horaria
-            isConjugated = self.dadosOriginais[atividadeIndex][4]
-            periodos_indisponiveis = self.dadosOriginais[atividadeIndex][6]
-            newAlocacao = self.distribuirCH((len(self.periodos)), ch, isConjugated, periodos_indisponiveis)
-
-            x[atividadeIndex] = newAlocacao.tolist()
+            workload = self.originalData[randomIndex][3]
+            isConjugated = self.originalData[randomIndex][4]
+            unavailablePeriods = self.originalData[randomIndex][6]
+            newAllocation = self._distributeWorkload(workload, isConjugated, unavailablePeriods)
+            x[randomIndex] = newAllocation.tolist()
             
         return x
-
 
 #Dados para testar
 # 0ATIVIDADE, 1TURMA, 2PROFESSOR, 3CH, 4GEMINAR?, 5RECURSO, 6ids de periodos indisponiveis
@@ -234,7 +217,13 @@ dados = [
 
 periodos = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20]
 teste = geneticAlgorithm(dados, periodos)
-teste.main()
+best, conflicts = teste.run()
+print("primeira execução")
+
+if conflicts > 0:
+    solution2, conflicts2 = teste.run()
+    print("execução 1", conflicts)
+    print("execução 2", conflicts2)
 
 #id da atividade, ids dos periodos com restrições
 restrictions = [
