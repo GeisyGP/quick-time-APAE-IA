@@ -5,13 +5,12 @@ Repositório com o algoritmo de inteligência artificial para gerar o quadro de 
 
 Resultado do algoritmo é uma matriz, sendo cada linha uma atividade e cada coluna um período. Onde tem 1 indica que o período é ocupado pela atividade.
 
-Ao encontrar uma solução com 0 conflitos o algoritmo encerra retornando a solução. O máximo de gerações pode ser alterado pelas variáveis de ambiente, por padrão está com 35 mil gerações.
+Ao encontrar uma solução com 0 conflitos o algoritmo encerra retornando a solução. 
 
-Dessa forma, o tempo para encontrar a solução pode variar:
-- Solução encontrada em 4 segundos:
-![Imagem com exemplo de solução](doc_files/400generations.png)
-- Solução encontrada em 262 segundos:
-![Imagem com exemplo de solução](doc_files/25000generations.png)
+Essa versão implementa:
+- elitismo (os 5 primeiros cromossomos da população são os melhores da última geração)
+- alternativa para fitness estagnada: faz uma hard mutation
+- tenta até 3 vezes fazer um crossover que não obtenha mais conflitos que os pais
 
 ### População inicial
 A população inicial é gerada conforme:

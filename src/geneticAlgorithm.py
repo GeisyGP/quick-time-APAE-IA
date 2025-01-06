@@ -13,6 +13,7 @@ class geneticAlgorithm:
         self.mutationRate = int(os.getenv("MUTATION_RATE"))
         self.generations = int(os.getenv("GENERATIONS"))
         self.population = []
+        self.noImprovementGenerations = 0
 
         self.activitiesByClass = self._groupActivities(1)
         self.activitiesByTeacher = self._groupActivities(2)
@@ -29,33 +30,46 @@ class geneticAlgorithm:
         for g in range(self.generations):
             F = []
 
+            eliteSize = 4
+            sorted_population = sorted(self.population, key=self._fitness)
+            elite = sorted_population[:eliteSize]
+            F.extend(elite)
+
             # Selection
-            for i in range((self.populationSize)//2):
+            for i in range((self.populationSize-eliteSize)//2):
                 t1 = self._tournament()
                 t2 = self._tournament()
                 while t1 == t2:
                     t2 = self._tournament()
                 a, b = self._crossover(self.population[t1], self.population[t2])
-               
-                a = self._mutation(a)
-                b = self._mutation(b)   
+                if self.noImprovementGenerations >= self.generations//6:
+                    self.mutationRate += 10
+                    a = self._hardMutation(a)
+                    b = self._hardMutation(b)
+                    self.noImprovementGenerations = 0
+                    self.hardWasCalled = True
+                else:
+                    a = self._mutation(a)
+                    b = self._mutation(b)   
 
                 F.append(a)
                 F.append(b)
 
             self.population = F
 
+            print("Generation: ", g+1)
             self._printsPopulation()
-            if (g+1) % 500 == 0:
-                print("Generation: ", g+1, self.bestFitness)
 
             if self.bestFitness == 0:
                 break
+
+            if self._fitness(self.population[0]) <= 4:
+                self.population[0] = self._mutation(self.population[0])
         
         end_time = time.time()
         execution_time = end_time - start_time
 
-        print("Best solution: ", self.best, self.bestFitness)
+        print("Best solution: ", self.best, self.bestFitness, self.mutationRate, self.noImprovementGenerations)
         print(f"Execution time: {execution_time:.2f} seconds")
         return self.best, self.bestFitness
     
@@ -124,12 +138,14 @@ class geneticAlgorithm:
     def _printsPopulation(self):
         for i in range(self.populationSize):
             f = self._fitness(self.population[i])
-            # print(i, f)
+            print(i, f)
 
             if f < self.bestFitness:
-                # print(i, f)
                 self.bestFitness = f
                 self.best = self.population[i]
+                self.noImprovementGenerations = 0
+
+        self.noImprovementGenerations += 1
 
     def _tournament(self):
         random1 = np.random.randint(0, self.populationSize-1)
@@ -171,10 +187,18 @@ class geneticAlgorithm:
         return conflicts
 
     def _crossover(self, x, y):
-        cutoffPoint = np.random.randint(1, len(x))
+        maxAttempts = 4
 
-        childA = x[:cutoffPoint] + y[cutoffPoint:]
-        childB = y[:cutoffPoint] + x[cutoffPoint:]
+        for attempt in range(maxAttempts):
+            cutoffPoint = np.random.randint(1, len(x))
+
+            childA = x[:cutoffPoint] + y[cutoffPoint:]
+            childB = y[:cutoffPoint] + x[cutoffPoint:]
+
+            childAIsBetterThanParents = self._fitness(childA) < self._fitness(x) or self._fitness(childA) < self._fitness(y)
+            childBIsBetterThanParents = self._fitness(childB) < self._fitness(x) or self._fitness(childB) < self._fitness(y)
+            if (childAIsBetterThanParents and childBIsBetterThanParents):
+                break
 
         return childA, childB
 
@@ -190,6 +214,20 @@ class geneticAlgorithm:
             x[randomIndex] = newAllocation.tolist()
             
         return x
+    
+    def _hardMutation(self, x):
+        r = np.random.randint(1, 100)
+        if r <= self.mutationRate:
+            x = []
+            for a in range (len(self.originalData)):
+                workload = self.originalData[a][3]
+                isConjugated = self.originalData[a][4]
+                unavailablePeriods = self.originalData[a][6]
+                allocation = self._distributeWorkload(workload, isConjugated, unavailablePeriods)
+                x.append(allocation.tolist())
+            
+        return x
+
 
 #Dados para testar
 # 0ATIVIDADE, 1TURMA, 2PROFESSOR, 3CH, 4GEMINAR?, 5RECURSO, 6ids de periodos indisponiveis
@@ -223,4 +261,4 @@ dados = [
 
 periodos = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20]
 teste = geneticAlgorithm(dados, periodos)
-best, conflicts = teste.run()
+teste.run()
