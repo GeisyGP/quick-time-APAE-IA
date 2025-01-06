@@ -5,10 +5,13 @@ Repositório com o algoritmo de inteligência artificial para gerar o quadro de 
 
 Resultado do algoritmo é uma matriz, sendo cada linha uma atividade e cada coluna um período. Onde tem 1 indica que o período é ocupado pela atividade.
 
-_Menor quantidade de conflitos encontrados até o momento: **0** em 04m50s_ Com a seguinte configuração:
-- self.populationSize = 500
-- self.mutationRate = 40 #Taxa de mutação (40% dos filhos terao a mutacao aplicada)
-- self.generations = 1500
+Ao encontrar uma solução com 0 conflitos o algoritmo encerra retornando a solução. O máximo de gerações pode ser alterado pelas variáveis de ambiente, por padrão está com 35 mil gerações.
+
+Dessa forma, o tempo para encontrar a solução pode variar:
+- Solução encontrada em 4 segundos:
+![Imagem com exemplo de solução](doc_files/400generations.png)
+- Solução encontrada em 262 segundos:
+![Imagem com exemplo de solução](doc_files/25000generations.png)
 
 ### População inicial
 A população inicial é gerada conforme:
@@ -16,9 +19,9 @@ A população inicial é gerada conforme:
 - respeitando a indicação se deve ser geminada; e
 - respeitando os períodos indisponíveis.
 
-Caso não tenha períodos disponíveis suficientes para a carga horária de uma atividade, irá dar erro. Essa validação precisa ser feita antes de chamar esse algoritmo para prevenir quebra.
+> :exclamation: Caso não tenha períodos disponíveis suficientes para a carga horária de uma atividade, irá dar erro. Essa validação precisa ser feita antes de chamar esse algoritmo para prevenir quebra.
 
-Caso um conjuntos de atividades de um mesmo professor, turma ou recurso ultrapasse a carga horária, irá sempre dar conflito até que isso seja alterado no banco de dados.
+> :exclamation: Caso um conjuntos de atividades de um mesmo professor, turma ou recurso ultrapasse a carga horária, irá sempre dar conflito até que isso seja alterado no banco de dados.
 
 ### Fitness
 Na função fitness é contado a quantidade de conflitos que há no indivíduo da população. Cada indivíduo representa uma solução para o quadro de horários. Validações feitas na fitness:

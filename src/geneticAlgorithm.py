@@ -1,13 +1,17 @@
 import numpy as np
 import time
+from dotenv import load_dotenv
+import os
+
+load_dotenv()
 
 class geneticAlgorithm:
     def __init__(self, originalData, periods):
         self.originalData = originalData
         self.periods = periods
-        self.populationSize = 80
-        self.mutationRate = 40
-        self.generations = 3000
+        self.populationSize = int(os.getenv("POPULATION_SIZE"))
+        self.mutationRate = int(os.getenv("MUTATION_RATE"))
+        self.generations = int(os.getenv("GENERATIONS"))
         self.population = []
 
         self.activitiesByClass = self._groupActivities(1)
@@ -41,8 +45,9 @@ class geneticAlgorithm:
 
             self.population = F
 
-            print("Generation: ", g+1)
             self._printsPopulation()
+            if (g+1) % 500 == 0:
+                print("Generation: ", g+1, self.bestFitness)
 
             if self.bestFitness == 0:
                 break
@@ -119,9 +124,10 @@ class geneticAlgorithm:
     def _printsPopulation(self):
         for i in range(self.populationSize):
             f = self._fitness(self.population[i])
-            print(i, f)
+            # print(i, f)
 
             if f < self.bestFitness:
+                # print(i, f)
                 self.bestFitness = f
                 self.best = self.population[i]
 
@@ -218,15 +224,3 @@ dados = [
 periodos = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20]
 teste = geneticAlgorithm(dados, periodos)
 best, conflicts = teste.run()
-print("primeira execução")
-
-if conflicts > 0:
-    solution2, conflicts2 = teste.run()
-    print("execução 1", conflicts)
-    print("execução 2", conflicts2)
-
-#id da atividade, ids dos periodos com restrições
-restrictions = [
-    [1, [4, 8, 12, 16, 20]],
-    [3, [4, 8, 12, 16, 20]]
-]
