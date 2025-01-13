@@ -41,3 +41,30 @@ Podemos considerar, caso necessário, implementar o crossover por períodos. O q
 
 ### Mutação
 A mutação está sendo a alteração aleatória da disposição dos períodos de uma atividade selecionada aleatoriamente dentre as atividades do indivíduo.
+
+## API
+
+Criar ambiente virtual:
+```bash
+# Windows
+py -3 -m venv .venv
+
+# Linux
+python3 -m venv .venv
+```
+
+Ativar ambiente virtual:
+```bash
+# Windows
+.venv\Scripts\activate
+
+# Linux
+. .venv/bin/activate
+```
+
+Executar API:
+```bash
+pip install -r .\requirements.txt
+
+flask --app app run
+```
