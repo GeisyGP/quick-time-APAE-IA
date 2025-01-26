@@ -1,6 +1,7 @@
 from flask import Flask, request, jsonify 
 import json
 from src.geneticAlgorithm import GeneticAlgorithm
+from src.quickTimeClient import QuickTimeClient
 
 app = Flask(__name__)
 
@@ -29,13 +30,15 @@ def runAlgorithm():
         geneticAlgorithm = GeneticAlgorithm(activities, periods)
         best, conflicts = geneticAlgorithm.run()
 
-        return jsonify({
-            "message": "Algorithm successfully executed",
-            "data": {
-                "conflicts": conflicts,
-                "best": best
-            }
-        }), 200
-
     except json.JSONDecodeError:
         return jsonify({"error": "The file is not a valid JSON"}), 400
+
+    quickTimeClient = QuickTimeClient()
+    quickTimeClient.saveSchedule(best, conflicts)
+    return jsonify({
+        "message": "Algorithm successfully executed",
+        "data": {
+            "conflicts": conflicts,
+            "best": best
+        }
+    }), 200

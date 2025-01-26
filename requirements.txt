@@ -2,3 +2,4 @@ serverless-wsgi
 flask
 numpy
 python-dotenv
+requests

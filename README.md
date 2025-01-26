@@ -68,3 +68,8 @@ pip install -r .\requirements.txt
 
 flask --app app run
 ```
+
+Desativar ambiente virtual:
+```bash
+deactivate
+```
