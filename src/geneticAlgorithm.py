@@ -28,6 +28,8 @@ class GeneticAlgorithm:
 
         for g in range(self.generations):
             F = []
+            actual_time = time.time()
+            execution_time = actual_time - start_time
 
             # Selection
             for i in range((self.populationSize)//2):
@@ -37,8 +39,11 @@ class GeneticAlgorithm:
                     t2 = self._tournament()
                 a, b = self._crossover(self.population[t1], self.population[t2])
                
-                a = self._mutation(a)
-                b = self._mutation(b)   
+                if execution_time >= 180 or self.bestFitness < 1000:
+                    a = self._softMutation(a)
+                    b = self._softMutation(b)
+                a = self._hardMutation(a)
+                b = self._hardMutation(b)   
 
                 F.append(a)
                 F.append(b)
@@ -47,9 +52,17 @@ class GeneticAlgorithm:
 
             self._printsPopulation()
             if (g+1) % 500 == 0:
+                print("Execution time: ", execution_time)
                 print("Generation: ", g+1, self.bestFitness)
 
             if self.bestFitness == 0:
+                break
+
+            # if execution_time > 180 and self.bestFitness < 3:
+            #     break
+            if execution_time > 300 and self.bestFitness < 10:
+                break
+            if execution_time > 600:
                 break
         
         end_time = time.time()
@@ -77,13 +90,12 @@ class GeneticAlgorithm:
             chromosome = []
             for a in range (len(self.originalData)):
                 workload = self.originalData[a][3]
-                isConjugated = self.originalData[a][4]
                 unavailablePeriods = self.originalData[a][6]
-                allocation = self._distributeWorkload(workload, isConjugated, unavailablePeriods)
+                allocation = self._distributeWorkload(workload, unavailablePeriods)
                 chromosome.append(allocation.tolist())
             self.population.append(chromosome)
          
-    def _distributeWorkload(self, workload, isConjugated, unavailablePeriods):
+    def _distributeWorkload(self, workload, unavailablePeriods):
         arraySize = len(self.periods)
         array = np.zeros((arraySize), dtype=int)
         
@@ -97,26 +109,12 @@ class GeneticAlgorithm:
         for periodo in unavailableIndexes:
             array[periodo] = -1
 
-        if isConjugated:
-            max_attempts = 100
-            attempt = 0
-            while attempt < max_attempts:
-                startIndex = np.random.randint(0, arraySize - workload + 1)
-                segment = array[startIndex:startIndex + workload]
-                if -1 not in segment:
-                    array[startIndex:startIndex + workload] = 1
-                    break
-                attempt += 1
-            if attempt == max_attempts:
-                print("Error: It was not possible to find a valid point for the conjugate allocation")
-
+        availablePeriods = [i for i in range(arraySize) if array[i] == 0]
+        if len(availablePeriods) >= workload:
+            randomIndexes = np.random.choice(availablePeriods, workload, replace=False)
+            array[randomIndexes] = 1
         else:
-            availablePeriods = [i for i in range(arraySize) if array[i] == 0]
-            if len(availablePeriods) >= workload:
-                randomIndexes = np.random.choice(availablePeriods, workload, replace=False)
-                array[randomIndexes] = 1
-            else:
-                print("Erro: Not enough periods available for allocation")
+            print("Erro: Not enough periods available for allocation")
         
         array[array == -1] = 0
         return array
@@ -152,8 +150,9 @@ class GeneticAlgorithm:
         conflicts += self._calculateConflictsByEntity(self.activitiesByClass, chromosome)
         conflicts += self._calculateConflictsByEntity(self.activitiesByTeacher, chromosome)
         conflicts += self._calculateConflictsByEntity(self.activitiesByResource, chromosome)
-                        
-        return conflicts
+        missingPairs = self._findMissingPairs(chromosome)
+
+        return conflicts*1000 + missingPairs
 
     def _calculateConflictsByEntity(self, activitiesByEntity, chromosome):
         conflicts = 0
@@ -169,6 +168,21 @@ class GeneticAlgorithm:
                             else:
                                 busyPeriods[periodIndex] = originalIndex
         return conflicts
+    
+    def _findMissingPairs(self, chromosome):
+        missingPairs = 0
+        for a in range (len(self.originalData)):
+            foundedPairs = 0
+            workload = self.originalData[a][3]
+            isConjugated = self.originalData[a][4]
+            if isConjugated:
+                pairs = workload//2
+                for i in range(len(chromosome[a])-1):
+                    foundedPairs += (chromosome[a][i] + chromosome[a][i+1])//2
+                if (pairs - foundedPairs) > 0:
+                    missingPairs += pairs - foundedPairs
+        return missingPairs
+
 
     def _crossover(self, x, y):
         cutoffPoint = np.random.randint(1, len(x))
@@ -178,18 +192,40 @@ class GeneticAlgorithm:
 
         return childA, childB
 
-    def _mutation(self, x):
+    def _hardMutation(self, x):
         r = np.random.randint(1, 100)
         if r <= self.mutationRate:
             randomIndex = np.random.randint(0, len(x)-1)
             
             workload = self.originalData[randomIndex][3]
-            isConjugated = self.originalData[randomIndex][4]
             unavailablePeriods = self.originalData[randomIndex][6]
-            newAllocation = self._distributeWorkload(workload, isConjugated, unavailablePeriods)
+            newAllocation = self._distributeWorkload(workload, unavailablePeriods)
             x[randomIndex] = newAllocation.tolist()
-            
+
         return x
+    
+    def _softMutation(self, x):
+        r = np.random.randint(1, 100)
+        if r <= self.mutationRate:
+            randomIndex = np.random.randint(0, len(x)-1)
+            alocados = [i for i, v in enumerate(x[randomIndex]) if v == 1]
+
+            sorteado = np.random.choice(alocados)
+            x[randomIndex][sorteado] = 0
+
+            if len(alocados) > 1 and r <= 20:
+                candidatos = [i for i in alocados if (i > 0 and x[randomIndex][i - 1] == 0)]
+                if len(candidatos) > 0: 
+                    newLocation = np.random.choice(candidatos)
+                    x[randomIndex][newLocation - 1] = 1 
+                    return x
+                
+            disponiveis = [i for i, v in enumerate(x[randomIndex]) if v == 0]
+            newLocation = np.random.choice(disponiveis)
+            x[randomIndex][newLocation] = 1
+
+        return x
+
 
 #Dados para testar
 # 0ATIVIDADE, 1TURMA, 2PROFESSOR, 3CH, 4GEMINAR?, 5RECURSO, 6ids de periodos indisponiveis
@@ -222,3 +258,6 @@ dados = [
 ]
 
 periodos = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20]
+
+a = GeneticAlgorithm(dados, periodos)
+a.run()

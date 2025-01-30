@@ -40,7 +40,11 @@ Inicialmente implementado dividindo as ativadades dos pais, da seguinte forma:
 Podemos considerar, caso necessário, implementar o crossover por períodos. O que implica em organizar novamente a CH e geminação.
 
 ### Mutação
-A mutação está sendo a alteração aleatória da disposição dos períodos de uma atividade selecionada aleatoriamente dentre as atividades do indivíduo.
+A mutação está ocorrendo de duas formas:
+- Nas primeiras gerações é aplicada a "hardMutation". Nela é realizada uma nova distribuição aleatória da carga horária de uma atividade selecionada aleatoriamente dentre as atividades de um indivíduo.
+- Quando a quantidade de conflitos chega a 2000 (2 conflitos importantes), a mutação aplicada é a "softMutation", em que é alterado de forma aleatória a alocação de uma aula de uma atividade selecionada aleatoriamente dentre as atividades do indivíduo.
+
+Essa estratégia foi escolhida observando que nas primeiras gerações é mais eficiente ter uma maior variedade para diminuir mais rapidamente a quantidade de conflitos.
 
 ## API
 
