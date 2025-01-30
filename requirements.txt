@@ -1,4 +1,3 @@
-serverless-wsgi
 flask
 numpy
 python-dotenv

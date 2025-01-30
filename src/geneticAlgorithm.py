@@ -28,8 +28,6 @@ class GeneticAlgorithm:
 
         for g in range(self.generations):
             F = []
-            actual_time = time.time()
-            execution_time = actual_time - start_time
 
             # Selection
             for i in range((self.populationSize)//2):
@@ -39,9 +37,10 @@ class GeneticAlgorithm:
                     t2 = self._tournament()
                 a, b = self._crossover(self.population[t1], self.population[t2])
                
-                if execution_time >= 180 or self.bestFitness < 1000:
+                if g >= 20000  or self.bestFitness < 1000:
                     a = self._softMutation(a)
                     b = self._softMutation(b)
+                    self.mutationRate = 60
                 a = self._hardMutation(a)
                 b = self._hardMutation(b)   
 
@@ -52,6 +51,8 @@ class GeneticAlgorithm:
 
             self._printsPopulation()
             if (g+1) % 500 == 0:
+                actual_time = time.time()
+                execution_time = actual_time - start_time
                 print("Execution time: ", execution_time)
                 print("Generation: ", g+1, self.bestFitness)
 
@@ -60,10 +61,10 @@ class GeneticAlgorithm:
 
             # if execution_time > 180 and self.bestFitness < 3:
             #     break
-            if execution_time > 300 and self.bestFitness < 10:
-                break
-            if execution_time > 600:
-                break
+            # if execution_time > 300 and self.bestFitness < 10:
+            #     break
+            # if execution_time > 600:
+            #     break
         
         end_time = time.time()
         execution_time = end_time - start_time
@@ -259,5 +260,5 @@ dados = [
 
 periodos = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20]
 
-a = GeneticAlgorithm(dados, periodos)
-a.run()
+# a = GeneticAlgorithm(dados, periodos)
+# a.run()
