@@ -37,10 +37,6 @@ class GeneticAlgorithm:
                     t2 = self._tournament()
                 a, b = self._crossover(self.population[t1], self.population[t2])
                
-                if g >= 20000  or self.bestFitness < 1000:
-                    a = self._softMutation(a)
-                    b = self._softMutation(b)
-                    self.mutationRate = 60
                 a = self._hardMutation(a)
                 b = self._hardMutation(b)   
 
@@ -51,20 +47,17 @@ class GeneticAlgorithm:
 
             self._printsPopulation()
             if (g+1) % 500 == 0:
-                actual_time = time.time()
-                execution_time = actual_time - start_time
-                print("Execution time: ", execution_time)
+                if (g+1) % 2000 == 0:
+                    actual_time = time.time()
+                    execution_time = actual_time - start_time
+                    print(execution_time)
+
+                    if execution_time > 240 and self.bestFitness < 5:
+                        break
                 print("Generation: ", g+1, self.bestFitness)
 
             if self.bestFitness == 0:
                 break
-
-            # if execution_time > 180 and self.bestFitness < 3:
-            #     break
-            # if execution_time > 300 and self.bestFitness < 10:
-            #     break
-            # if execution_time > 600:
-            #     break
         
         end_time = time.time()
         execution_time = end_time - start_time
@@ -171,6 +164,9 @@ class GeneticAlgorithm:
         return conflicts
     
     def _findMissingPairs(self, chromosome):
+        daysPerWeek = 5
+        periodsPerDay = len(self.periods) / daysPerWeek
+
         missingPairs = 0
         for a in range (len(self.originalData)):
             foundedPairs = 0
@@ -178,10 +174,17 @@ class GeneticAlgorithm:
             isConjugated = self.originalData[a][4]
             if isConjugated:
                 pairs = workload//2
-                for i in range(len(chromosome[a])-1):
-                    foundedPairs += (chromosome[a][i] + chromosome[a][i+1])//2
+
+                for day in range(daysPerWeek):
+                    startIdx = day * periodsPerDay
+                    endIdx = (day + 1) * periodsPerDay
+
+                    for i in range(int(startIdx), int(endIdx) - 1):
+                        foundedPairs += (chromosome[a][i] + chromosome[a][i+1]) // 2
+                
                 if (pairs - foundedPairs) > 0:
                     missingPairs += pairs - foundedPairs
+                    
         return missingPairs
 
 
@@ -204,29 +207,6 @@ class GeneticAlgorithm:
             x[randomIndex] = newAllocation.tolist()
 
         return x
-    
-    def _softMutation(self, x):
-        r = np.random.randint(1, 100)
-        if r <= self.mutationRate:
-            randomIndex = np.random.randint(0, len(x)-1)
-            alocados = [i for i, v in enumerate(x[randomIndex]) if v == 1]
-
-            sorteado = np.random.choice(alocados)
-            x[randomIndex][sorteado] = 0
-
-            if len(alocados) > 1 and r <= 20:
-                candidatos = [i for i in alocados if (i > 0 and x[randomIndex][i - 1] == 0)]
-                if len(candidatos) > 0: 
-                    newLocation = np.random.choice(candidatos)
-                    x[randomIndex][newLocation - 1] = 1 
-                    return x
-                
-            disponiveis = [i for i, v in enumerate(x[randomIndex]) if v == 0]
-            newLocation = np.random.choice(disponiveis)
-            x[randomIndex][newLocation] = 1
-
-        return x
-
 
 #Dados para testar
 # 0ATIVIDADE, 1TURMA, 2PROFESSOR, 3CH, 4GEMINAR?, 5RECURSO, 6ids de periodos indisponiveis
