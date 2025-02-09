@@ -1,17 +1,13 @@
 import numpy as np
 import time
-from dotenv import load_dotenv
-import os
-
-load_dotenv()
 
 class GeneticAlgorithm:
     def __init__(self, originalData, periods):
         self.originalData = originalData
         self.periods = periods
-        self.populationSize = int(os.getenv("POPULATION_SIZE"))
-        self.mutationRate = int(os.getenv("MUTATION_RATE"))
-        self.generations = int(os.getenv("GENERATIONS"))
+        self.populationSize = 80
+        self.mutationRate = 40
+        self.generations = 400000
         self.population = []
 
         self.activitiesByClass = self._groupActivities(1)
@@ -19,7 +15,7 @@ class GeneticAlgorithm:
         self.activitiesByResource = self._groupActivities(5)
 
         self.best = []
-        self.bestFitness = 10000
+        self.bestFitness = 100000
 
     def run(self):
         start_time = time.time()
@@ -50,8 +46,10 @@ class GeneticAlgorithm:
                 if (g+1) % 2000 == 0:
                     actual_time = time.time()
                     execution_time = actual_time - start_time
-                    print(execution_time)
+                    # For local tests
+                    # print(execution_time)
 
+                    # Limited time to resolve soft conflicts
                     if execution_time > 240 and self.bestFitness < 5:
                         break
                 print("Generation: ", g+1, self.bestFitness)
@@ -210,35 +208,35 @@ class GeneticAlgorithm:
 
 #Dados para testar
 # 0ATIVIDADE, 1TURMA, 2PROFESSOR, 3CH, 4GEMINAR?, 5RECURSO, 6ids de periodos indisponiveis
-dados = [
-    [1, [1], [1], 16, False, [1], [16, 20]],
-    [2, [1], [1], 2, True, [], []],
-    [3, [1], [1], 2, True, [], []],
-    [4, [2], [2], 14, False, [], []],
-    [5, [2], [3], 1, False, [1], [4, 8, 12, 16, 20]],
-    [7, [2], [4], 1, False, [], []],
-    [8, [2], [2], 1, False, [], []],
-    [9, [2, 3], [5], 1, False, [], []],
-    [10, [2, 3], [4, 3], 2, True, [], []],
-    [11, [3], [6], 14, False, [], []],
-    [12, [3], [3], 1, False, [], []],
-    [13, [3], [4], 1, False, [], []],
-    [14, [3], [6], 1, False, [], []], 
-    [15, [4], [7], 15, False, [], []],
-    [16, [4], [3], 1, False, [], []],
-    [18, [4], [4], 2, False, [], []],
-    [19, [4], [5], 1, False, [], []],
-    [20, [4], [7], 1, False, [], []],
-    [21, [5], [8], 19, False, [], []],
-    [22, [5], [8], 1, False, [], []],
-    [23, [6], [9], 16, False, [], []],
-    [24, [6], [9], 1, False, [], []],
-    [25, [6], [3], 1, False, [], []],
-    [26, [6], [4], 1, False, [], []],
-    [27, [6], [9], 1, False, [], [1]],
-]
+# dados = [
+#     [1, [1], [1], 16, False, [1], [16, 20]],
+#     [2, [1], [1], 2, True, [], []],
+#     [3, [1], [1], 2, True, [], []],
+#     [4, [2], [2], 14, False, [], []],
+#     [5, [2], [3], 1, False, [1], [4, 8, 12, 16, 20]],
+#     [7, [2], [4], 1, False, [], []],
+#     [8, [2], [2], 1, False, [], []],
+#     [9, [2, 3], [5], 1, False, [], []],
+#     [10, [2, 3], [4, 3], 2, True, [], []],
+#     [11, [3], [6], 14, False, [], []],
+#     [12, [3], [3], 1, False, [], []],
+#     [13, [3], [4], 1, False, [], []],
+#     [14, [3], [6], 1, False, [], []], 
+#     [15, [4], [7], 15, False, [], []],
+#     [16, [4], [3], 1, False, [], []],
+#     [18, [4], [4], 2, False, [], []],
+#     [19, [4], [5], 1, False, [], []],
+#     [20, [4], [7], 1, False, [], []],
+#     [21, [5], [8], 19, False, [], []],
+#     [22, [5], [8], 1, False, [], []],
+#     [23, [6], [9], 16, False, [], []],
+#     [24, [6], [9], 1, False, [], []],
+#     [25, [6], [3], 1, False, [], []],
+#     [26, [6], [4], 1, False, [], []],
+#     [27, [6], [9], 1, False, [], [1]],
+# ]
 
-periodos = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20]
+# periodos = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20]
 
 # a = GeneticAlgorithm(dados, periodos)
 # a.run()

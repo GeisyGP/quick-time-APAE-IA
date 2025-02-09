@@ -2,3 +2,5 @@ flask
 numpy
 python-dotenv
 requests
+Pillow
+opencv-python-headless
