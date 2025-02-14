@@ -7,7 +7,7 @@ class GeneticAlgorithm:
         self.periods = periods
         self.populationSize = 80
         self.mutationRate = 40
-        self.generations = 400000
+        self.generations = 200000
         self.population = []
 
         self.activitiesByClass = self._groupActivities(1)
