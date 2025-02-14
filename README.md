@@ -5,7 +5,7 @@ Repositório com o algoritmo de inteligência artificial para gerar o quadro de 
 
 Resultado do algoritmo é uma matriz, sendo cada linha uma atividade e cada coluna um período. Onde tem 1 indica que o período é ocupado pela atividade.
 
-Ao encontrar uma solução com 0 conflitos o algoritmo encerra retornando a solução. O máximo de gerações pode ser alterado pelas variáveis de ambiente, por padrão está com 35 mil gerações.
+Ao encontrar uma solução com 0 conflitos o algoritmo encerra retornando a solução. Por padrão o máximo de gerações está com 200 mil gerações.
 
 Dessa forma, o tempo para encontrar a solução pode variar:
 - Solução encontrada em 4 segundos:
@@ -15,8 +15,7 @@ Dessa forma, o tempo para encontrar a solução pode variar:
 
 ### População inicial
 A população inicial é gerada conforme:
-- a carga horária de cada atividade;
-- respeitando a indicação se deve ser geminada; e
+- a carga horária de cada atividade; e
 - respeitando os períodos indisponíveis.
 
 > :exclamation: Caso não tenha períodos disponíveis suficientes para a carga horária de uma atividade, irá dar erro. Essa validação precisa ser feita antes de chamar esse algoritmo para prevenir quebra.
@@ -28,6 +27,7 @@ Na função fitness é contado a quantidade de conflitos que há no indivíduo d
 - Conflito de turma: uma mesma turma com mais de uma atividade no mesmo período
 - Conflito de professor: um mesmo professor com mais de uma atividade no mesmo período
 - Conflito de recurso: um mesmo recurso com mais de uma atividade no mesmo período
+- Conflito de geminação: uma atividade que precisa ser geminada em aulas duplas não está geminada
 
 ### Crossover 
 Inicialmente implementado dividindo as ativadades dos pais, da seguinte forma:
@@ -37,7 +37,7 @@ Inicialmente implementado dividindo as ativadades dos pais, da seguinte forma:
 - As atividades do pai 1 após o corte vão para o filho B
 - As atividades do pai 2 após o corte vão para o filho A
 
-Podemos considerar, caso necessário, implementar o crossover por períodos. O que implica em organizar novamente a CH e geminação.
+Podemos considerar, caso necessário, implementar o crossover por períodos. O que implica em organizar novamente a carga horária.
 
 ### Mutação
 A mutação está ocorrendo da seguinte forma:
@@ -47,7 +47,9 @@ Essa estratégia foi escolhida observando que é mais eficiente ter uma maior va
 
 ## API
 
-Criar ambiente virtual:
+Copie o arquivo `example.env` como `.env` e substitua os valores das variáveis por valores reais.
+
+Crie o ambiente virtual se ainda não existe:
 ```bash
 # Windows
 py -3 -m venv .venv
@@ -56,7 +58,7 @@ py -3 -m venv .venv
 python3 -m venv .venv
 ```
 
-Ativar ambiente virtual:
+Ative o ambiente virtual:
 ```bash
 # Windows
 .venv\Scripts\activate
@@ -65,14 +67,14 @@ Ativar ambiente virtual:
 . .venv/bin/activate
 ```
 
-Executar API:
+Execute a API:
 ```bash
 pip install -r .\requirements.txt
 
 flask --app app run
 ```
 
-Desativar ambiente virtual:
+Após finalizar, pode desativar o ambiente virtual:
 ```bash
 deactivate
 ```
